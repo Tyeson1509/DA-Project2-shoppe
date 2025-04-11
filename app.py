@@ -32,6 +32,18 @@ def login_page():
             st.rerun()
         else:
             st.error("Tên đăng nhập hoặc mật khẩu không đúng!")
+    
+        # 🔽 Phần chú thích
+    st.markdown("""
+    ---
+    📝 **Hướng dẫn đăng nhập:**
+    
+    Lấy các username trong file `Products_ThoiTrangNam_rating_raw.csv` để đăng nhập với password mặc định là `123`.
+
+    **Ví dụ:**
+    - Username: `karmakyun2nd`  
+    - Password: `123`
+    """)
 
 
 # ✅ Nếu chưa đăng nhập thì hiển thị form login và STOP
@@ -40,7 +52,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Sau khi đăng nhập ---
-st.set_page_config(page_title="Shopee Thời Gian", layout="wide")
+st.set_page_config(page_title="Shopee", layout="wide")
 
 query_params = st.query_params
 menu_options = ["Trang chủ", "Sản phẩm", "About Us"]
@@ -152,9 +164,10 @@ def recommend_similar_products(product_id, top_n=5):
 
 # --- Trang chủ ---
 if selected_menu == "Trang chủ":
-    st.title("🛒 Shopee Thời Gian")
+    st.title("🛒 Shopee")
     st.header("🏠 Trang chủ")
-    st.write("Chào mừng bạn đến với Shopee Thời Gian – nơi mua sắm thú vị theo từng khung giờ!")
+    st.image("images/shopee-banner.png", width=600)
+    st.markdown("<h4>Chào mừng bạn đến với Shopee – nơi mua sắm thú vị theo từng khung giờ!</h4>", unsafe_allow_html=True)
 
     username = st.session_state.get("username")
     user_row = ratings_df[ratings_df["user"] == username]
@@ -293,9 +306,9 @@ elif selected_menu == "Sản phẩm":
 
 # --- About Us ---
 elif selected_menu == "About Us":
-    #st.title("🛒 Shopee Thời Gian")
+    #st.title("🛒 Shopee")
     st.header("ℹ️ About Us")
-    st.write("Shopee Thời Gian là nền tảng bán hàng theo khung giờ giúp bạn tiết kiệm và săn deal hấp dẫn.")
+    st.write("Shopee là nền tảng bán hàng theo khung giờ giúp bạn tiết kiệm và săn deal hấp dẫn.")
 
     st.markdown("""
         ---
