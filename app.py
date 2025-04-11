@@ -43,6 +43,10 @@ def login_page():
     **Ví dụ:**
     - Username: `karmakyun2nd`  
     - Password: `123`
+
+    ---
+    **Lưu ý:**
+    - Hiện tại phần xem chi tiết sản phẩm bị lỗi cần phải đăng nhập lại, hãy chịu khó đăng nhập lại, sau đó sẽ xem được chi tiết sản phẩm, nhóm em đang tìm cách fix
     """)
 
 
