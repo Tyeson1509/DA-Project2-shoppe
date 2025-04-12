@@ -89,21 +89,18 @@ def load_model_components():
     tfidf_model = models.TfidfModel.load("models/product_tfidf.model")
     index = similarities.MatrixSimilarity.load("models/product_similarity.index")
     return dictionary, tfidf_model, index
-
 dictionary, tfidf_model, index = load_model_components()
 
 @st.cache_data
 def get_tfidf_corpus(df):
     corpus = [dictionary.doc2bow(tokens) for tokens in df['final_tokens']]
     return tfidf_model[corpus]
-
 tfidf_corpus = get_tfidf_corpus(products_df)
 
 def recommend_for_user(user_id, top_n=10):
     rated_products = ratings_df[ratings_df["user_id"] == user_id]["product_id"].unique()
     all_product_ids = products_df["product_id"].unique()
     products_to_predict = [pid for pid in all_product_ids if pid not in rated_products]
-
     predictions = []
     for pid in products_to_predict:
         try:
@@ -111,7 +108,6 @@ def recommend_for_user(user_id, top_n=10):
             predictions.append((pid, pred.est))
         except:
             continue
-
     top_predictions = sorted(predictions, key=lambda x: -x[1])[:top_n]
     top_products = products_df[products_df["product_id"].isin([pid for pid, _ in top_predictions])]
     return top_products
@@ -121,12 +117,10 @@ def recommend_similar_products(product_id, top_n=5):
         product_idx = products_df[products_df["product_id"] == product_id].index[0]
     except IndexError:
         return pd.DataFrame()
-
     query_doc = tfidf_corpus[product_idx]
     sims = index[query_doc]
     sims = sorted(enumerate(sims), key=lambda x: -x[1])
     sims = [s for s in sims if s[0] != product_idx][:top_n]
-
     recommendations = []
     for idx, score in sims:
         product_info = products_df.iloc[idx]
@@ -162,72 +156,24 @@ if selected_menu == "Trang chủ":
     if not user_row.empty:
         user_id = user_row["user_id"].iloc[0]
         st.subheader("🎯 Gợi ý dành riêng cho bạn")
-        
-        # Lấy danh sách sản phẩm gợi ý cho người dùng
         recommended = recommend_for_user(user_id, top_n=10)
-        
-        # Chèn CSS để định dạng các sản phẩm gợi ý trong khung cố định
-        st.markdown("""
-        <style>
-        .product-container {
-            width: 220px;
-            height: 300px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin: auto;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-        .product-container img {
-            max-height: 150px;
-            object-fit: contain;
-            width: 100%;
-        }
-        .product-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 5px 0;
-            height: 40px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        /* Style cho nút Xem chi tiết tạo bởi st.button */
-        div.stButton > button {
-            background-color: #007bff;
-            color: white;
-            border-radius: 4px;
-            font-size: 14px;
-            padding: 5px 10px;
-            margin-top: 10px;
-            width: 100%;
-            border: none;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
         rec_cols = st.columns(5)
         for i, (_, row) in enumerate(recommended.iterrows()):
             with rec_cols[i % 5]:
-                # Sử dụng HTML để hiển thị khung sản phẩm
-                product_html = f"""
-                <div class="product-container">
-                    <img src="{row['image']}" alt="{row['product_name']}">
-                    <div class="product-title">{row['product_name']}</div>
-                    <div style="margin-top:5px;">💰 <b>{row['price']:,}₫</b> &nbsp;&nbsp; ⭐ <b>{row['rating']}</b></div>
-                </div>
-                """
-                st.markdown(product_html, unsafe_allow_html=True)
-                
-                # Nút "Xem chi tiết" để cập nhật selected_product_id và chuyển sang giao diện chi tiết sản phẩm
-                if st.button("Xem chi tiết", key=f"home_{row['product_id']}"):
+                try:
+                    st.image(row["image"], use_container_width=True)
+                except:
+                    st.warning("Không có ảnh")
+                # Khi người dùng click vào sản phẩm gợi ý ở trang chủ,
+                # cập nhật cả session_state và query_params để chuyển sang hiển thị chi tiết sản phẩm
+                if st.button(f"{row['product_name'][:30]}", key=f"home_{row['product_id']}"):
                     st.session_state.selected_product_id = row["product_id"]
-                    st.query_params["menu"] = "Sản phẩm"  # đảm bảo menu chuyển sang Sản phẩm nếu cần
+                    st.query_params["menu"] = "Sản phẩm"  # Chuyển sang menu sản phẩm
                     st.rerun()
+                st.markdown(
+                    f"💰 <b>{row['price']:,}₫</b> &nbsp;&nbsp; ⭐ <b>{row['rating']}</b>",
+                    unsafe_allow_html=True
+                )
     else:
         st.info("Bạn chưa có dữ liệu đánh giá để gợi ý sản phẩm.")
 
@@ -276,50 +222,6 @@ elif selected_menu == "Sản phẩm":
             st.error("Không tìm thấy sản phẩm.")
     else:
         # Nếu chưa chọn sản phẩm nào, hiển thị danh sách sản phẩm dạng lưới có phân trang
-        # Chèn CSS để định dạng mỗi sản phẩm trong khung cố định, hiển thị đầy đủ thông tin
-        st.markdown("""
-        <style>
-        .product-container {
-            width: 220px;
-            height: 300px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin: auto;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-sizing: border-box;
-        }
-        .product-container img {
-            max-height: 150px;
-            object-fit: contain;
-            width: 100%;
-        }
-        .product-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 5px 0;
-            height: 40px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        /* Style cho nút "Xem chi tiết" được tạo bởi st.button */
-        div.stButton > button {
-            background-color: #007bff;
-            color: white;
-            border-radius: 4px;
-            font-size: 14px;
-            padding: 5px 10px;
-            margin-top: 10px;
-            width: 100%;
-            border: none;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-
         sub_categories = ["All"] + sorted(products_df["sub_category"].dropna().unique())
         if "selected_sub_category" not in st.session_state:
             st.session_state.selected_sub_category = "All"
@@ -369,21 +271,17 @@ elif selected_menu == "Sản phẩm":
         cols = st.columns(5)
         for idx, row in page_data.iterrows():
             with cols[idx % 5]:
-                # Hiển thị khung sản phẩm bằng HTML
-                product_html = f"""
-                <div class="product-container">
-                    <img src="{row['image']}" alt="{row['product_name']}">
-                    <div class="product-title">{row['product_name']}</div>
-                    <div style="margin-top:5px;">💰 <b>{row['price']:,}₫</b> &nbsp;&nbsp; ⭐ <b>{row['rating']}</b></div>
-                </div>
-                """
-                st.markdown(product_html, unsafe_allow_html=True)
-                
-                # Sau đó, dùng st.button để tạo nút "Xem chi tiết" với logic tương tự code cũ:
-                if st.button("Xem chi tiết", key=f"list_{row['product_id']}"):
+                try:
+                    st.image(row["image"], width=120)
+                except:
+                    st.warning("Không thể hiển thị ảnh.")
+                if st.button(f"{row['product_name']}", key=f"list_{row['product_id']}"):
                     st.session_state.selected_product_id = row['product_id']
                     st.rerun()
-
+                st.markdown(
+                    f"💰 <b>{row['price']:,}₫</b> &nbsp;&nbsp; ⭐ <b>{row['rating']}</b>",
+                    unsafe_allow_html=True
+                )
 
 # --- About Us ---
 elif selected_menu == "About Us":
